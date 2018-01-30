@@ -33,6 +33,7 @@ namespace TodoAPI
             services.AddDbContext<TodoContext>( opt => opt.UseSqlServer(Configuration.GetConnectionString("Default")));
             services.AddAutoMapper();
             services.AddMvc();
+            services.AddApiVersioning( o => o.AssumeDefaultVersionWhenUnspecified = true);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
