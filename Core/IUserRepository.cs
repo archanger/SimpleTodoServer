@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using TodoAPI.Core.Models;
 
@@ -7,6 +8,7 @@ namespace TodoAPI.Core
     {
         void Add(User user);
         Task Confirm(string code);
+        Task<User> FindById(Guid id);
         Task<User> FindByName(string username);
         Task<User> FindByEmail(string email);
     }

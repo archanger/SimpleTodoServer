@@ -22,6 +22,11 @@ namespace TodoAPI.Persistance
             Context.Users.Add(user);
         }
 
+        public async Task<User> FindById(Guid id)
+        {
+            return await Context.Users.FindAsync(id);
+        }
+
         public async Task<User> FindByName(string username)
         {
             return await Context.Users.SingleOrDefaultAsync( u => u.Username == username);

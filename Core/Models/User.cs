@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace TodoAPI.Core.Models
 {
@@ -12,5 +13,6 @@ namespace TodoAPI.Core.Models
         public DateTime CreatedAt { get; set; }
         public DateTime ModifiedAt { get; set; }
 
+        public IEnumerable<TodoItem> Items { get; set; }
     }
 }

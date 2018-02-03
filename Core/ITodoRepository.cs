@@ -6,8 +6,8 @@ namespace TodoAPI.Core
 {
     public interface ITodoRepository
     {
-        Task<Result<TodoItem>> GetTodos(TodoQuery query);
-        Task<TodoItem> GetTodo(long id);
+        Task<Result<TodoItem>> GetTodos(TodoQuery query, User user);
+        Task<TodoItem> GetTodo(long id, User user);
 
         void Add(TodoItem item);
 

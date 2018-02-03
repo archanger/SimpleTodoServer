@@ -14,6 +14,9 @@ using TodoAPI.Core.Models;
 using TodoAPI.Persistance;
 using AutoMapper;
 using TodoAPI.Config;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace TodoAPI
 {
@@ -33,7 +36,25 @@ namespace TodoAPI
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.Configure<HostEmailSettings>(Configuration.GetSection("EmailHosting"));
+            services.Configure<JwtSettings>(Configuration.GetSection("Jwt"));
             services.AddDbContext<TodoContext>( opt => opt.UseSqlServer(Configuration.GetConnectionString("Default")));
+            
+            var jwtSettings = Configuration.GetSection("Jwt").Get<JwtSettings>();
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => {
+                options.TokenValidationParameters = new TokenValidationParameters 
+                {
+                    RequireExpirationTime = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
+                };
+            });
+            
             services.AddAutoMapper();
             services.AddMvc();
             services.AddApiVersioning( o => o.AssumeDefaultVersionWhenUnspecified = true);
@@ -46,7 +67,8 @@ namespace TodoAPI
             {
                 app.UseDeveloperExceptionPage();
             }
-    
+
+            app.UseAuthentication();
             app.UseMvc();
         }
     }

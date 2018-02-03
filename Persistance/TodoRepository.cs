@@ -16,11 +16,11 @@ namespace TodoAPI.Persistance
             this.context = context;
         }
 
-        public async Task<Result<TodoItem>> GetTodos(TodoQuery query)
+        public async Task<Result<TodoItem>> GetTodos(TodoQuery query, User user)
         {
             var result = new Result<TodoItem>();
 
-            var q = context.TodoItems.AsQueryable();
+            var q = context.TodoItems.Where(i => i.User == user);
             if (query.Limit <= 0) {
                 query.Limit = 10;
             } 
@@ -44,9 +44,9 @@ namespace TodoAPI.Persistance
             context.TodoItems.Remove(item);
         }
 
-        public async Task<TodoItem> GetTodo(long id)
+        public async Task<TodoItem> GetTodo(long id, User user)
         {
-            return await context.TodoItems.FindAsync(id);
+            return await context.TodoItems.FirstOrDefaultAsync(i => i.User == user && i.Id == id);
         }
     }
 }
