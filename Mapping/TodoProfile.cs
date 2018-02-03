@@ -1,6 +1,7 @@
 using AutoMapper;
 using TodoAPI.Controllers.Resources;
 using TodoAPI.Core.Models;
+using TodoAPI.Helpers;
 
 namespace TodoAPI.Mapping
 {
@@ -12,6 +13,8 @@ namespace TodoAPI.Mapping
             CreateMap(typeof(Result<>), typeof(ResultResource<>));
             CreateMap<TodoItemResource, TodoItem>();
             CreateMap<TodoQueryResourse, TodoQuery>();
+            CreateMap<AccountRegisterResource, User>()
+                .ForMember(u => u.PasswordHash, opt => opt.MapFrom(a => Hashing.HashPassword(a.Password)));
         }
     }
 }

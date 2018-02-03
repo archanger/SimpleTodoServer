@@ -13,6 +13,7 @@ using TodoAPI.Core;
 using TodoAPI.Core.Models;
 using TodoAPI.Persistance;
 using AutoMapper;
+using TodoAPI.Config;
 
 namespace TodoAPI
 {
@@ -29,7 +30,9 @@ namespace TodoAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddScoped<ITodoRepository, TodoRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.Configure<HostEmailSettings>(Configuration.GetSection("EmailHosting"));
             services.AddDbContext<TodoContext>( opt => opt.UseSqlServer(Configuration.GetConnectionString("Default")));
             services.AddAutoMapper();
             services.AddMvc();

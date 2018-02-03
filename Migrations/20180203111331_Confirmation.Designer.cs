@@ -11,9 +11,10 @@ using TodoAPI.Persistance;
 namespace TodoAPI.Migrations
 {
     [DbContext(typeof(TodoContext))]
-    partial class TodoContextModelSnapshot : ModelSnapshot
+    [Migration("20180203111331_Confirmation")]
+    partial class Confirmation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -26,8 +27,6 @@ namespace TodoAPI.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<Guid>("ConfiramtionCode");
-
-                    b.Property<bool>("Confirmed");
 
                     b.Property<Guid>("UserId");
 

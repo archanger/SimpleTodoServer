@@ -11,33 +11,15 @@ using TodoAPI.Persistance;
 namespace TodoAPI.Migrations
 {
     [DbContext(typeof(TodoContext))]
-    partial class TodoContextModelSnapshot : ModelSnapshot
+    [Migration("20180203094317_Users")]
+    partial class Users
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "2.0.1-rtm-125")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-            modelBuilder.Entity("TodoAPI.Core.Models.EmailConfirmation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd();
-
-                    b.Property<Guid>("ConfiramtionCode");
-
-                    b.Property<bool>("Confirmed");
-
-                    b.Property<Guid>("UserId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("EmailConfirmations");
-                });
 
             modelBuilder.Entity("TodoAPI.Core.Models.TodoItem", b =>
                 {
@@ -58,6 +40,8 @@ namespace TodoAPI.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<bool>("Confirmed");
+
                     b.Property<DateTime>("CreatedAt");
 
                     b.Property<string>("Email");
@@ -71,14 +55,6 @@ namespace TodoAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("TodoAPI.Core.Models.EmailConfirmation", b =>
-                {
-                    b.HasOne("TodoAPI.Core.Models.User")
-                        .WithOne("EmailConfirmation")
-                        .HasForeignKey("TodoAPI.Core.Models.EmailConfirmation", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 #pragma warning restore 612, 618
         }
