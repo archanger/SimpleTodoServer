@@ -36,12 +36,12 @@ namespace TodoAPI.Persistance
 
         public async Task<User> FindByName(string username)
         {
-            return await Context.Users.SingleOrDefaultAsync( u => u.Username == username);
+            return await Context.Users.Include(u => u.EmailConfirmation).SingleOrDefaultAsync( u => u.Username == username);
         }
 
         public async Task<User> FindByEmail(string email)
         {
-            return await Context.Users.SingleOrDefaultAsync( u => u.Email == email);
+            return await Context.Users.Include(u => u.EmailConfirmation).SingleOrDefaultAsync( u => u.Email == email);
         }
 
         public async Task Confirm(string code)

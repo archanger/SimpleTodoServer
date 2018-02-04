@@ -1,16 +1,15 @@
 version: "3"
 services:
   web: 
-    image: todoapi
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     ports:
       - "8080:80"
     depends_on:
       - db
   db:
     image: "microsoft/mssql-server-linux"
+    expose: 
+      - "1433"
     environment:
       SA_PASSWORD: "DunkleKonigreich!0678"
       ACCEPT_EULA: "Y"

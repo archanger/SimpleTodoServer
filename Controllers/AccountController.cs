@@ -87,6 +87,20 @@ namespace TodoAPI.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("resend")]
+        public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationResource resource)
+        {
+            var user = await UserRepository.FindByEmail(resource.Email);
+            if (user == null) {
+                return BadRequest(new { Error = "User not found"});
+            }
+
+            SendConfirmationEmail(user);
+
+            return NoContent();
+        }
+
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> CreateToken([FromBody] AuthorizationResource authorization)
         {
