@@ -78,6 +78,9 @@ namespace TodoAPI.Controllers
         [HttpGet("confirm/{confirmationId}")]
         public async Task<IActionResult> Confirm(string confirmationId)
         {
+            if (await UserRepository.IsConfirmed(confirmationId)) {
+                return Ok(new { Error = "Already Confirmed" });
+            }
             await UserRepository.Confirm(confirmationId);
             await UnitOfWork.CompleteAsync();
             return Ok(new { Confirmed = true });

@@ -27,6 +27,13 @@ namespace TodoAPI.Persistance
             return await Context.Users.FindAsync(id);
         }
 
+        public async Task<bool> IsConfirmed(string confirmationCode) 
+        {
+            var guid = Guid.Parse(confirmationCode);
+            var confirmation = await Context.EmailConfirmations.FirstOrDefaultAsync(c => c.ConfiramtionCode == guid);
+            return confirmation.Confirmed;
+        }
+
         public async Task<User> FindByName(string username)
         {
             return await Context.Users.SingleOrDefaultAsync( u => u.Username == username);

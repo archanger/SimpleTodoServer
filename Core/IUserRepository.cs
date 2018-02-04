@@ -10,6 +10,7 @@ namespace TodoAPI.Core
         Task Confirm(string code);
         Task<User> FindById(Guid id);
         Task<User> FindByName(string username);
+        Task<bool> IsConfirmed(string confirmationCode);
         Task<User> FindByEmail(string email);
     }
 }
