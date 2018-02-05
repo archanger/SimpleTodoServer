@@ -1,11 +1,18 @@
 version: "3"
 services:
+  proxy:
+    build: ./nginx
+    ports:
+      - "8080:8080"
+    restart: always
   web: 
     build: .
-    ports:
-      - "8080:80"
+    expose:
+      - "80"
     depends_on:
       - db
+      - proxy
+    restart: always
   db:
     image: "microsoft/mssql-server-linux"
     expose: 

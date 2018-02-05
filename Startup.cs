@@ -17,6 +17,7 @@ using TodoAPI.Config;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace TodoAPI
 {
@@ -67,7 +68,10 @@ namespace TodoAPI
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            app.UseForwardedHeaders(new ForwardedHeadersOptions 
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+            });
             app.UseAuthentication();
             app.UseMvc();
         }
