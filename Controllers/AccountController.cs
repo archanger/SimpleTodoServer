@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using TodoAPI.Errors;
 using TodoAPI.Config;
 using TodoAPI.Controllers.Resources;
 using TodoAPI.Core;
@@ -44,6 +45,8 @@ namespace TodoAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
+        [ProducesResponseType(typeof(ErrorGeneric<IEnumerable<string>>), 409)]
+        [ProducesResponseType(typeof(User), 201)]
         public async Task<IActionResult> Register([FromBody] AccountRegisterResource account)
         {
             var user = Mapper.Map<User>(account);
@@ -58,7 +61,7 @@ namespace TodoAPI.Controllers
             }
 
             if (messages.Count > 0) {
-                return BadRequest(new { Error = messages });
+                return StatusCode(409, new { Error = messages } );
             }
 
             user.Id = Guid.NewGuid();
@@ -71,7 +74,7 @@ namespace TodoAPI.Controllers
 
             SendConfirmationEmail(user);
 
-            return Ok(user);
+            return StatusCode(201, user);
         }
 
         [AllowAnonymous]
