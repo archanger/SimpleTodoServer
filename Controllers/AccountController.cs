@@ -46,10 +46,6 @@ namespace TodoAPI.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] AccountRegisterResource account)
         {
-            if(!ModelState.IsValid) {
-                return BadRequest(new ValidationErrorResource(ModelState));
-            }
-
             var user = Mapper.Map<User>(account);
             var messages = new List<string>();
 

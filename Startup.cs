@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.HttpOverrides;
+using SimpleTodoServer.Filters;
 
 namespace TodoAPI
 {
@@ -57,7 +58,9 @@ namespace TodoAPI
             });
             
             services.AddAutoMapper();
-            services.AddMvc();
+            services.AddMvc(options => {
+                options.Filters.Add(new ValidationFilter());
+            });
             services.AddApiVersioning( o => o.AssumeDefaultVersionWhenUnspecified = true);
         }
 
