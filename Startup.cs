@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.WebSockets;
 using TodoAPI.Core;
 using TodoAPI.Core.Models;
 using TodoAPI.Persistance;
@@ -77,6 +78,11 @@ namespace TodoAPI
             });
             app.UseAuthentication();
             app.UseMvc();
+
+            app.UseWebSockets(new WebSocketOptions{
+                KeepAliveInterval = TimeSpan.FromSeconds(20),
+                ReceiveBufferSize = 4 * 1024
+            });
         }
     }
 }
