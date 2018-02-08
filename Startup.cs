@@ -20,6 +20,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.HttpOverrides;
 using SimpleTodoServer.Filters;
+using System.Net.WebSockets;
+using Microsoft.AspNetCore.Http;
+using System.Threading;
+using TodoAPI.Middleware;
+using TodoAPI.Chat;
 
 namespace TodoAPI
 {
@@ -79,9 +84,8 @@ namespace TodoAPI
             app.UseAuthentication();
             app.UseMvc();
 
-            app.UseWebSockets(new WebSocketOptions{
-                KeepAliveInterval = TimeSpan.FromSeconds(20),
-                ReceiveBufferSize = 4 * 1024
+            app.UseCustomWebSocket( router => {
+                router.MapHub<ChatRoom>("/public");
             });
         }
     }
