@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 
-namespace TodoAPI.Middleware
+namespace TodoAPI.Middleware.Implemetations
 {
-    public class Clinets
+    public class HubClinets : IHubClients
     {
         private Dictionary<string, WebSocketClient> _clients;
 
@@ -13,7 +14,7 @@ namespace TodoAPI.Middleware
             get { return new ClinetsProxy(_clients); }
         }
 
-        public Clinets(Dictionary<string, WebSocketClient> clients)
+        public HubClinets(Dictionary<string, WebSocketClient> clients)
         {
             this._clients = clients;
         }
@@ -33,11 +34,6 @@ namespace TodoAPI.Middleware
             return new ClientProxy(client);
         }
 
-    }
-
-    public interface IClientProxy
-    {
-        Task SendMessageAsync(string message);
     }
 
     public class ClinetsProxy : IClientProxy

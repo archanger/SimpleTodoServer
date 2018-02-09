@@ -6,25 +6,25 @@ namespace TodoAPI.Chat
 {
     public class ChatRoom : Hub
     {
-        public ChatRoom(Clinets clients) : base(clients)
+        public override async Task OnConnected(string clientId)
         {
+            var list = new List<string>() { clientId };
+            await Clients.AllExecpt(list).SendMessageAsync($"{clientId} joined!");
+            await Clients.Client(clientId).SendMessageAsync($"Hello {clientId}");
         }
 
-        public override async Task OnConnected(WebSocketClient client)
+        public override async Task OnDisconnected(string clientId)
         {
-            var list = new List<string>() { client.Id };
-            await Clients.AllExecpt(list).SendMessageAsync($"{client.Id} joined!");
-            await Clients.Client(client.Id).SendMessageAsync($"Hello {client.Id}");
+            await Clients.All.SendMessageAsync($"{clientId} left us");
         }
 
-        public override async Task OnDisconnected(WebSocketClient client)
+        public override async Task MessageReceived(string clientId, string message)
         {
-            await client.SendMessageAsync($"Left! {client.Id}");
-        }
-
-        public override async Task MessageReceived(WebSocketClient client, string message)
-        {
-            await client.SendMessageAsync("Got it");
+            await Clients
+                    .AllExecpt(
+                        new List<string>() { clientId }
+                    )
+                    .SendMessageAsync($"{clientId}: {message}");
         }
     }
 }

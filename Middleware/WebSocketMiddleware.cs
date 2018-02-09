@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using TodoAPI.Chat;
+using TodoAPI.Middleware.Implemetations;
 
 namespace TodoAPI.Middleware
 {
@@ -39,12 +40,12 @@ namespace TodoAPI.Middleware
                 clients[client.Id] = client;
 
                 var hub = (Hub)Activator.CreateInstance(
-                    router.TypeForRoute(context.Request.Path),
-                    new Clinets(clients)
+                    router.TypeForRoute(context.Request.Path)
                 );
+                hub.Clients = new HubClinets(clients);
 
                 // connected
-                await hub.OnConnected(client);
+                await hub.OnConnected(client.Id);
 
                 while (true)
                 {
@@ -63,15 +64,16 @@ namespace TodoAPI.Middleware
                         continue;
                     }
 
-                    await hub.MessageReceived(client, response);
+                    await hub.MessageReceived(client.Id, response);
 
                 }
 
                 // disconnected 
 
-                await hub.OnDisconnected(client);
+                await hub.OnDisconnected(client.Id);
 
                 clients.Remove(client.Id);
+                await client.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
             }
             else
             {
