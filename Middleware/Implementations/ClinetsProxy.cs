@@ -43,11 +43,11 @@ namespace TodoAPI.Middleware.Implemetations
         {
             this._clients = clients;
         }
-        public async Task SendMessageAsync(string message)
+        public async Task SendMessageAsync(string action, object message)
         {
             foreach (var c in _clients)
             {
-                await c.Value.SendMessageAsync(message);
+                await c.Value.SendMessageAsync(action, message);
             }
         }
     }
@@ -59,9 +59,9 @@ namespace TodoAPI.Middleware.Implemetations
         {
             this.client = client;
         }
-        public async Task SendMessageAsync(string message)
+        public async Task SendMessageAsync(string action, object message)
         {
-            await client.SendMessageAsync(message);
+            await client.SendMessageAsync(action, message);
         }
     }
 }

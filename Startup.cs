@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Http;
 using System.Threading;
 using TodoAPI.Middleware;
 using TodoAPI.Chat;
+using TodoAPI.Helpers;
 
 namespace TodoAPI
 {
@@ -50,17 +51,7 @@ namespace TodoAPI
             var jwtSettings = Configuration.GetSection("Jwt").Get<JwtSettings>();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options => {
-                options.TokenValidationParameters = new TokenValidationParameters 
-                {
-                    RequireExpirationTime = true,
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings.Issuer,
-                    ValidAudience = jwtSettings.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
-                };
+                options.TokenValidationParameters = JwtHelper.GetJwtParamteres(jwtSettings);
             });
             
             services.AddAutoMapper();

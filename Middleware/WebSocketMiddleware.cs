@@ -6,8 +6,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using TodoAPI.Chat;
+using TodoAPI.Config;
 using TodoAPI.Middleware.Implemetations;
+using Newtonsoft.Json;
+using TodoAPI.Helpers;
+using Newtonsoft.Json.Linq;
+using System.Linq;
+using TodoAPI.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace TodoAPI.Middleware
 {
@@ -16,14 +24,16 @@ namespace TodoAPI.Middleware
         private readonly RequestDelegate next;
         private readonly Dictionary<string, WebSocketClient> clients;
         private readonly HubRouteBuilder router;
-        public WebSocketMiddleware(RequestDelegate next, HubRouteBuilder router)
+        private readonly JwtSettings jwtOptions;
+        public WebSocketMiddleware(RequestDelegate next, HubRouteBuilder router, IOptions<JwtSettings> jwtOptions)
         {
+            this.jwtOptions = jwtOptions.Value;
             this.router = router;
             this.next = next;
             this.clients = new Dictionary<string, WebSocketClient>();
         }
 
-        public async Task Invoke(HttpContext context)
+        public async Task Invoke(HttpContext context, IUserRepository ur)
         {
             if (!context.WebSockets.IsWebSocketRequest || !router.CanAcceptRoute(context.Request.Path))
             {
@@ -32,22 +42,41 @@ namespace TodoAPI.Middleware
             }
 
 
-            if (context.WebSockets.IsWebSocketRequest)
+            if (!context.WebSockets.IsWebSocketRequest)
             {
-                var ct = context.RequestAborted;
-                WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
-                var client = new WebSocketClient { Id = Guid.NewGuid().ToString(), Socket = socket };
-                clients[client.Id] = client;
+                context.Response.StatusCode = 400;
+                return;
+            }
 
-                var hub = (Hub)Activator.CreateInstance(
-                    router.TypeForRoute(context.Request.Path)
-                );
-                hub.Clients = new HubClinets(clients);
+            var ct = context.RequestAborted;
+            WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
+            var client = new WebSocketClient { Id = Guid.NewGuid().ToString(), Socket = socket };
+            clients[client.Id] = client;
 
-                // connected
-                await hub.OnConnected(client.Id);
+            // context.RequestServices
 
-                while (true)
+            var hubType = router.TypeForRoute(context.Request.Path);
+            var hubConstructor = hubType.GetConstructors().First();
+
+            // var hubConstructorParameters = hubConstructor
+            //     .GetParameters()
+            //     .Select(p => sp.GetService(p.GetType()))
+            //     .Where(p => p != null)
+            //     .Append(jwtOptions);
+
+            var hubConstructorParameters = new object[] { ur, jwtOptions };    
+
+            var hub = (Hub)hubConstructor.Invoke(hubConstructorParameters.ToArray());
+
+            hub.Clients = new HubClinets(clients);
+
+            // connected
+            await hub.OnConnected(client.Id);
+
+            try
+            {
+
+                while (socket.State == WebSocketState.Open)
                 {
                     if (ct.IsCancellationRequested)
                     {
@@ -64,22 +93,19 @@ namespace TodoAPI.Middleware
                         continue;
                     }
 
-                    await hub.MessageReceived(client.Id, response);
-
+                    await HandleAction(hub, client, response);
                 }
 
-                // disconnected 
-
-                await hub.OnDisconnected(client.Id);
-
-                clients.Remove(client.Id);
-                await client.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
             }
-            else
+            catch (System.Exception)
             {
-                context.Response.StatusCode = 400;
             }
 
+            // disconnected 
+
+            clients.Remove(client.Id);
+            await hub.OnDisconnected(client.Id);
+            await client.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
         }
 
         private async Task<string> ReceiveStringAsync(WebSocketClient client, CancellationToken token = default(CancellationToken))
@@ -107,5 +133,53 @@ namespace TodoAPI.Middleware
                 }
             }
         }
+
+        private async Task HandleAction(Hub hub, WebSocketClient client, string response)
+        {
+            var requestObject = JsonConvert.DeserializeObject<WSRequest>(response);
+            var actionToCall = "On" + requestObject.Action.ToFirstLetterUppercased();
+            var hubMethod = hub.GetType().GetMethod(actionToCall);
+
+            if (hubMethod == null)
+            {
+                await Fallback(hub, client.Id, response);
+                return;
+            }
+
+            var hubMethodParameters = hubMethod.GetParameters();
+            if (hubMethodParameters.Count() != 2)
+            {
+                await Fallback(hub, client.Id, response);
+                return;
+            }
+
+            var parameterType = hubMethodParameters.Last().ParameterType;
+            var castMethod = requestObject.Data.GetType().GetMethods()
+                .FirstOrDefault(method => method.Name == "ToObject" && method.GetParameters().Count() == 0)
+                .MakeGenericMethod(new Type[] { parameterType });
+            var reauestMappedObject = castMethod.Invoke(requestObject.Data, null);
+            var parametersToHubMethod = new object[] {
+                        client.Id,
+                        reauestMappedObject
+                    };
+            hubMethod.Invoke(hub, parametersToHubMethod);
+        }
+
+        private async Task Fallback(Hub hub, string clientId, string response)
+        {
+            await hub.MessageReceived(clientId, response);
+        }
+    }
+
+    public class WSRequest
+    {
+        public string Action { get; set; }
+        public JObject Data { get; set; }
+    }
+
+    public class WSResponse
+    {
+        public string Action { get; set; }
+        public JObject Data { get; set; }
     }
 }
