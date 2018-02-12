@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using TodoAPI.Config;
@@ -24,18 +26,22 @@ namespace TodoAPI.Helpers
 
         public static bool IsValidToken(string token, JwtSettings settings)
         {
+            return ExtractClaims(token, settings) != null;
+        }
+
+        public static IEnumerable<Claim> ExtractClaims(string token, JwtSettings settings)
+        {
             try
             {
                 SecurityToken tkn;
                 var res = new JwtSecurityTokenHandler().ValidateToken(token, GetJwtParamteres(settings), out tkn);
-                return true;
+                return res.Claims;
             }
             catch (System.Exception)
             {
                 
-                return false;
+                return null;
             }
-
         }
     }
 }

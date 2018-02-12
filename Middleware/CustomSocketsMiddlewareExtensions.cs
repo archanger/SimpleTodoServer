@@ -1,5 +1,8 @@
 using System;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using TodoAPI.Core;
 
 namespace TodoAPI.Middleware
 {
@@ -13,7 +16,10 @@ namespace TodoAPI.Middleware
             });
             var router = new HubRouteBuilder();
             configure.Invoke(router);
-            builder.UseMiddleware<WebSocketMiddleware>(router);
+
+            var scope = builder.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+            builder.UseMiddleware<WebSocketMiddleware>(router, scope.ServiceProvider);
             return builder;
         }
     }

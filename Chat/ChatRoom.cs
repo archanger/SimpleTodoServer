@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using TodoAPI.Config;
 using TodoAPI.Core;
+using TodoAPI.Core.Models;
 using TodoAPI.Helpers;
 using TodoAPI.Middleware;
 
@@ -11,88 +14,106 @@ namespace TodoAPI.Chat
 {
     public class ChatRoom : Hub
     {
-        private readonly List<User> AuthUsers = new List<User>();
+        private readonly List<ChatUser> AuthUsers = new List<ChatUser>();
         private readonly IUserRepository userRepository;
         private readonly JwtSettings settings;
-        public ChatRoom(IUserRepository userRepository, JwtSettings settings)
+        public ChatRoom(IUserRepository userRepository, IOptions<JwtSettings> settings)
         {
             this.userRepository = userRepository;
-            this.settings = settings;
+            this.settings = settings.Value;
 
         }
         public override async Task OnConnected(string clientId)
         {
-            // var list = new List<string>() { clientId };
-            // await Clients.AllExecpt(list).SendMessageAsync("new", new MessageResponse{ Message = $"{clientId} joined!"});
-            // await Clients.Client(clientId).SendMessageAsync("greeting", $"Hello {clientId}");
-
             await Clients.Client(clientId).SendMessageAsync("auth", "Authorization Required");
         }
 
         public override async Task OnDisconnected(string clientId)
         {
-            RemoveUser(clientId);
-            await Clients.All.SendMessageAsync("bye", new MessageResponse{ Message = $"{clientId} left us" });
+            var user = RemoveUser(clientId);
+            await Clients.All.SendMessageAsync("bye", new SimpleMessageResponse{ Message = $"{user.User.Username} left us" });
         }
 
         public override async Task MessageReceived(string clientId, string message)
         {
             await Clients
-                    .AllExecpt(
-                        new List<string>() { clientId }
-                    )
-                    .SendMessageAsync("message", new MessageResponse{ Message = $"{clientId}: {message}" });
+                    .Client(clientId)
+                    .SendMessageAsync("message", new { Error = "Wrong message fromat" });
         }
 
-        public void OnAuth(string clientId, TokenRequest tr)
+        public async void OnAuth(string clientId, TokenRequest tr)
         {
             if (!JwtHelper.IsValidToken(tr.Token, settings)) {
-                Clients.Client(clientId).SendMessageAsync("auth", new { Erorr = "Unauthorized"});
+                await Clients.Client(clientId).SendMessageAsync("auth", new { Erorr = "Unauthorized"});
                 throw new Exception();
             } else {
-                // Authusers.Add(clientId);
-                Clients.Client(clientId).SendMessageAsync("auth", new { Ok = "Authorized"});
+                var id = ExtractUserIdFromToken(tr.Token);
+                if (!id.HasValue) {
+                    await Clients.Client(clientId).SendMessageAsync("auth", new { Error = "User Not Found"});
+                    return;
+                } 
+
+                var user = await userRepository.FindById(id.Value);
+                AuthUsers.Add(new ChatUser { ClientId = clientId, User = user } );
+                await Clients.Client(clientId).SendMessageAsync("auth", new { Ok = $"{user.Username} Authorized"});
             }
-            
         }
 
-        public void OnMessage(string clientId, Message message)
+        public void OnMessage(string clientId, MessageRequest message)
         {
-            // if (Authusers.Contains(clientId)) {
+            var user = AuthUsers.FirstOrDefault(u => u.ClientId == clientId);
+            if (user != null) {
 
-            //     Clients
-            //         .AllExecpt( new List<string>() { clientId })
-            //         .SendMessageAsync("message", new Message { Text = message.Text, From = message.From});
-
-            // }
+                Clients
+                    .AllExecpt( new List<string>() { clientId })
+                    .SendMessageAsync("message", new MessageResponse { Message = message.Message, From = user.User.Username });
+            }
         }
 
-        private void RemoveUser(string clientId) 
+        private ChatUser RemoveUser(string clientId) 
         {
             var usr = AuthUsers.Find(u => u.ClientId == clientId);
             AuthUsers.Remove(usr);
+            return usr;
+        }
+
+        private Guid? ExtractUserIdFromToken(string token)
+        {
+            var claim = JwtHelper.ExtractClaims(token, settings).FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (claim == null)
+            {
+                return null;
+            }
+
+            return Guid.Parse(claim.Value);
         }
     }
 
-    public class Message
+    public class MessageRequest
     {
-        public string Text { get; set; }
+        public string Message { get; set; }
+    }
+
+    public class MessageResponse 
+    {
+        public string Message { get; set; }
         public string From { get; set; }
     }
+
 
     public class TokenRequest
     {
         public string Token { get; set; }
     }
 
-    public class MessageResponse 
+    public class SimpleMessageResponse 
     {
         public string Message { get; set; }
     }
 
-    public class User 
+    public class ChatUser 
     {
         public string ClientId { get; set; }
-        public string Nickname { get; set; }
+        public User User { get; set; }
     }
 }

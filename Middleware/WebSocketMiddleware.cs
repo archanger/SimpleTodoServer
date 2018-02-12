@@ -24,16 +24,16 @@ namespace TodoAPI.Middleware
         private readonly RequestDelegate next;
         private readonly Dictionary<string, WebSocketClient> clients;
         private readonly HubRouteBuilder router;
-        private readonly JwtSettings jwtOptions;
-        public WebSocketMiddleware(RequestDelegate next, HubRouteBuilder router, IOptions<JwtSettings> jwtOptions)
+        private readonly IServiceProvider serviceProvider;
+        public WebSocketMiddleware(RequestDelegate next, HubRouteBuilder router, IServiceProvider serviceProvider)
         {
-            this.jwtOptions = jwtOptions.Value;
+            this.serviceProvider = serviceProvider;
             this.router = router;
             this.next = next;
             this.clients = new Dictionary<string, WebSocketClient>();
         }
 
-        public async Task Invoke(HttpContext context, IUserRepository ur)
+        public async Task Invoke(HttpContext context)
         {
             if (!context.WebSockets.IsWebSocketRequest || !router.CanAcceptRoute(context.Request.Path))
             {
@@ -56,17 +56,7 @@ namespace TodoAPI.Middleware
             // context.RequestServices
 
             var hubType = router.TypeForRoute(context.Request.Path);
-            var hubConstructor = hubType.GetConstructors().First();
-
-            // var hubConstructorParameters = hubConstructor
-            //     .GetParameters()
-            //     .Select(p => sp.GetService(p.GetType()))
-            //     .Where(p => p != null)
-            //     .Append(jwtOptions);
-
-            var hubConstructorParameters = new object[] { ur, jwtOptions };    
-
-            var hub = (Hub)hubConstructor.Invoke(hubConstructorParameters.ToArray());
+            var hub = (Hub)serviceProvider.GetService(hubType);
 
             hub.Clients = new HubClinets(clients);
 

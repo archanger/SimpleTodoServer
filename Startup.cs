@@ -59,6 +59,9 @@ namespace TodoAPI
                 options.Filters.Add(new ValidationFilter());
             });
             services.AddApiVersioning( o => o.AssumeDefaultVersionWhenUnspecified = true);
+            services.AddWSDependencies();
+
+            // return services.BuildServiceProvider();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -75,7 +78,7 @@ namespace TodoAPI
             app.UseAuthentication();
             app.UseMvc();
 
-            app.UseCustomWebSocket( router => {
+            app.UseCustomWebSocket(router => {
                 router.MapHub<ChatRoom>("/public");
             });
         }
