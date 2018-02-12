@@ -31,7 +31,7 @@ namespace TodoAPI.Chat
         public override async Task OnDisconnected(string clientId)
         {
             var user = RemoveUser(clientId);
-            await Clients.All.SendMessageAsync("bye", new SimpleMessageResponse{ Message = $"{user.User.Username} left us" });
+            await Clients.All.SendMessageAsync("left", new UserStatusResponse { Username = user.User.Username });
         }
 
         public override async Task MessageReceived(string clientId, string message)
@@ -56,18 +56,27 @@ namespace TodoAPI.Chat
                 var user = await userRepository.FindById(id.Value);
                 AuthUsers.Add(new ChatUser { ClientId = clientId, User = user } );
                 await Clients.Client(clientId).SendMessageAsync("auth", new { Ok = $"{user.Username} Authorized"});
+                await Clients
+                    .AllExecpt(new List<string>() { clientId })
+                    .SendMessageAsync("join", new UserStatusResponse { Username = user.Username });
             }
         }
 
-        public void OnMessage(string clientId, MessageRequest message)
+        public async void OnMessage(string clientId, MessageRequest message)
         {
             var user = AuthUsers.FirstOrDefault(u => u.ClientId == clientId);
             if (user != null) {
 
-                Clients
+                await Clients
                     .AllExecpt( new List<string>() { clientId })
                     .SendMessageAsync("message", new MessageResponse { Message = message.Message, From = user.User.Username });
             }
+        }
+
+        public async void OnStatus(string clientId) 
+        {
+            var users = AuthUsers.Select(u => u.User.Username);
+            await Clients.Client(clientId).SendMessageAsync("status", new UserStatusesResponse { Users = users });
         }
 
         private ChatUser RemoveUser(string clientId) 
@@ -100,7 +109,15 @@ namespace TodoAPI.Chat
         public string From { get; set; }
     }
 
+    public class UserStatusesResponse
+    {
+        public IEnumerable<string> Users { get; set; }
+    }
 
+    public class UserStatusResponse 
+    {
+        public string Username { get; set; }
+    }
     public class TokenRequest
     {
         public string Token { get; set; }

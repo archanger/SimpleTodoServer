@@ -137,22 +137,24 @@ namespace TodoAPI.Middleware
             }
 
             var hubMethodParameters = hubMethod.GetParameters();
-            if (hubMethodParameters.Count() != 2)
+            if (hubMethodParameters.Count() > 2)
             {
                 await Fallback(hub, client.Id, response);
                 return;
             }
 
-            var parameterType = hubMethodParameters.Last().ParameterType;
-            var castMethod = requestObject.Data.GetType().GetMethods()
-                .FirstOrDefault(method => method.Name == "ToObject" && method.GetParameters().Count() == 0)
-                .MakeGenericMethod(new Type[] { parameterType });
-            var reauestMappedObject = castMethod.Invoke(requestObject.Data, null);
-            var parametersToHubMethod = new object[] {
-                        client.Id,
-                        reauestMappedObject
-                    };
-            hubMethod.Invoke(hub, parametersToHubMethod);
+            var parametersToHubMethod = new List<object>();
+            parametersToHubMethod.Add(client.Id);
+
+            if (hubMethodParameters.Count() > 1) {
+                var parameterType = hubMethodParameters.Last().ParameterType;
+                var castMethod = requestObject.Data.GetType().GetMethods()
+                    .FirstOrDefault(method => method.Name == "ToObject" && method.GetParameters().Count() == 0)
+                    .MakeGenericMethod(new Type[] { parameterType });
+                var requestMappedObject = castMethod.Invoke(requestObject.Data, null);
+                parametersToHubMethod.Add(requestMappedObject);
+            }
+            hubMethod.Invoke(hub, parametersToHubMethod.ToArray());
         }
 
         private async Task Fallback(Hub hub, string clientId, string response)
